@@ -2,7 +2,7 @@ import TestsHelpers from '../../tests-helpers';
 import models from '../../../src/models';
 import request from 'supertest';
 
-describe('register', () => {
+describe('login', () => {
   let app;
   let newUserResponse;
 
