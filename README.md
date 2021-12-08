@@ -4,3 +4,5 @@
 
 - NVM
 - Docker
+- Sequelize
+- Jest
