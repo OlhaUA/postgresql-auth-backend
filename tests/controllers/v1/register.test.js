@@ -19,33 +19,27 @@ describe('register', () => {
   });
 
   it('should register a new user successfully', async () => {
-    await request(app)
+    const data = {
+      email: 'test@example.com',
+      password: 'Test123',
+      roles: ['admin', 'customer'],
+    };
+    const response = await request(app)
       .post('/v1/register')
-      .send({ email: 'test@example.com', password: 'Test123' })
+      .send(data)
       .expect(200);
-    const { User } = models;
-    const users = await User.findAll();
+    expect(response.body.success).toEqual(true);
+    expect(response.body.message).toEqual('User successfully registered');
+    const { User, Role, RefreshToken } = models;
+    const users = await User.findAll({ include: [Role, RefreshToken] });
     expect(users.length).toEqual(1);
-    expect(users[0].email).toEqual('test@example.com');
-  });
-
-  it('should register a new user successfully with roles', async () => {
-    await request(app)
-      .post('/v1/register')
-      .send({
-        email: 'test@example.com',
-        password: 'Test123',
-        roles: ['admin', 'customer'],
-      })
-      .expect(200);
-    const { User, Role } = models;
-    const users = await User.findAll({ include: Role });
-    expect(users.length).toEqual(1);
-    expect(users[0].email).toEqual('test@example.com');
-    const roles = users[0]['Roles'];
-    expect(roles.length).toEqual(2);
-    expect(roles[0].role).toEqual('admin');
-    expect(roles[1].role).toEqual('customer');
+    const newUser = users[0];
+    expect(newUser.email).toEqual(data.email);
+    expect(newUser.password).not.toEqual(data.password);
+    expect(newUser.Roles.length).toEqual(data.roles.length);
+    expect(newUser.Roles[0].role).toEqual('customer');
+    expect(newUser.Roles[1].role).toEqual('admin');
+    expect(newUser.RefreshToken.token).toEqual(expect.any(String));
   });
 
   it('should not create a new user if it already exists', async () => {

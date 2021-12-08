@@ -10,6 +10,10 @@ describe('User', () => {
     await TestsHelpers.stopDb();
   });
 
+  beforeEach(async () => {
+    await TestsHelpers.syncDb();
+  });
+
   describe('static methods', () => {
     describe('hashPassword', () => {
       it('should encrypt the password correctly', async () => {
@@ -21,27 +25,72 @@ describe('User', () => {
       });
     });
 
-    describe('comparePasswords', () => {
-      it('the hashed password must be the same as the original', async () => {
+    describe('createNewUser', () => {
+      it('should error if we create a new user with an invalid email', async () => {
         const { User } = models;
+        const data = {
+          email: 'test',
+          password: 'Test123',
+        };
+        let error;
+        try {
+          await User.createNewUser(data);
+        } catch (err) {
+          error = err;
+        }
+        expect(error).toBeDefined();
+        expect(error.errors.length).toEqual(1);
+        const errorObj = error.errors[0];
+        expect(errorObj.message).toEqual('Not a valid email address');
+        expect(errorObj.path).toEqual('email');
+      });
+
+      it('should error if we do not pass an email', async () => {
+        const { User } = models;
+        const data = {
+          password: 'Test123',
+        };
+        let error;
+        try {
+          await User.createNewUser(data);
+        } catch (err) {
+          error = err;
+        }
+        expect(error).toBeDefined();
+        expect(error.errors.length).toEqual(1);
+        const errorObj = error.errors[0];
+        expect(errorObj.message).toEqual('Email is required');
+        expect(errorObj.path).toEqual('email');
+      });
+    });
+  });
+
+  describe('instance methods', () => {
+    describe('comparePasswords', () => {
+      it('should return true if the hashed password is the same as the original one', async () => {
+        const { User } = models;
+        const email = 'test@example.com';
         const password = 'Test123';
+        const user = await User.create({ email, password });
         const hashedPassword = await User.hashPassword(password);
-        const arePasswordsEqual = await User.comparePasswords(
+        const arePasswordsEqual = await user.comparePasswords(
           password,
           hashedPassword
         );
-        expect(arePasswordsEqual).toBe(true);
+        expect(arePasswordsEqual).toEqual(true);
       });
 
-      it('the hashed password and the original are not equal', async () => {
+      it('should return false if if the hashed password is not the same as the original one', async () => {
         const { User } = models;
+        const email = 'test@example.com';
         const password = 'Test123';
+        const user = await User.create({ email, password });
         const hashedPassword = await User.hashPassword(password);
-        const arePasswordsEqual = await User.comparePasswords(
-          'Test123!',
+        const arePasswordsEqual = await user.comparePasswords(
+          'test123!',
           hashedPassword
         );
-        expect(arePasswordsEqual).toBe(false);
+        expect(arePasswordsEqual).toEqual(false);
       });
     });
   });
