@@ -11,7 +11,7 @@ router.post(
   asyncWrapper(async (req, res) => {
     const { email, password } = req.body;
     const user = await User.scope('withPassword').findOne({ where: { email } });
-
+    // debugger;
     if (!user || !(await user.comparePasswords(password))) {
       return res
         .status(401)
